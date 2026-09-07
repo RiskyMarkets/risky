@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>risky · App</title>
+<meta name="description" content="Mint, burn, stake and LP on inverse bonding curves for Robinhood Chain memecoins." />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<meta name="theme-color" content="#05070a" />
+<link rel="stylesheet" href="app.css" />
+</head>
+<body>
+<svg class="sprite" aria-hidden="true"><defs><g id="riskyMark"></g></defs></svg>
+
+<div class="frame">
+  <aside class="side">
+    <a class="side__logo" href="../" title="risky home" aria-label="risky">
+      <svg viewBox="0 0 761 296" aria-hidden="true"><use href="#riskyMark" /></svg>
+    </a>
+    <nav class="side__nav" id="nav">
+      <a class="side__link" href="#/" data-route="explore"><span class="slug">/markets</span> Explore</a>
+      <a class="side__link" href="#/create" data-route="create"><span class="slug">/open</span> Open a market</a>
+      <a class="side__link" href="../docs/" data-route="docs"><span class="slug">/docs</span> How it works</a>
+    </nav>
+    <div class="side__foot">
+      <span class="side__chain">Robinhood Chain · 4663</span>
+      <a href="https://robinhoodchain.blockscout.com/address/0xF9d9DdDc5cbD08021953C346C1E325F0CC03324a" target="_blank" rel="noopener">Factory on Blockscout ↗</a>
+      <a href="../docs/">Read the docs ↗</a>
+      <a href="https://github.com/RiskyMarkets/risky" target="_blank" rel="noopener">Open source ↗</a>
+      <span>No admin. No pause. No upgrade.</span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <div>
+        <h1 class="top__title" id="title">Explore</h1>
+        <p class="top__sub" id="subtitle">Every market open on Robinhood Chain</p>
+      </div>
+      <div class="wallet" id="wallet">
+        <button class="btn" id="connectBtn">Connect wallet</button>
+      </div>
+    </header>
+    <section id="view"></section>
+  </main>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

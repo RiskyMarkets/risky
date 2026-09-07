@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>risky</title>
+<meta name="description" content="Inverse bonding curves for Robinhood Chain memecoins. Mint it down, burn it up. No order book, no counterparty, no admin key." />
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<meta name="theme-color" content="#05070a" />
+
+<link rel="stylesheet" href="styles/site.css" />
+<link rel="stylesheet" href="styles/curve.css" />
+<link rel="stylesheet" href="styles/features.css" />
+</head>
+<body>
+
+<!-- Shared "risky" wordmark, referenced by every <use href="#riskyMark"> on the page. -->
+<svg class="sprite" aria-hidden="true"><defs><g id="riskyMark"></g></defs></svg>
+
+<!-- ============================== Hero ============================== -->
+<section class="hero" id="hero">
+  <div class="hero__stage" id="heroStage">
+    <canvas class="hero__canvas" id="heroCanvas"></canvas>
+    <div class="hero__loader" id="heroLoader"><div class="hero__spinner"></div></div>
+    <a class="hero__cta" id="heroCta" href="app/">Open App <span aria-hidden="true">↗</span></a>
+  </div>
+</section>
+
+<!-- Fixed "Open app" for everything after the burst. -->
+<a class="topbar" id="topbar" href="app/" aria-hidden="true">
+  <svg class="topbar__mark" viewBox="0 0 761 296" aria-hidden="true"><use href="#riskyMark" /></svg>
+  <span class="topbar__btn">Open app <span aria-hidden="true">↗</span></span>
+</a>
+
+<!-- ============================== Cards ============================= -->
+<section class="section section--after-hero">
+  <div class="shell">
+    <div class="section__intro" data-reveal>
+      <h2 class="section__heading">What is risky?</h2>
+      <p class="section__sub">Inverse bonding curves for Robinhood Chain memecoins</p>
+    </div>
+    <div class="cards">
+
+      <article class="card" data-card="curve" data-reveal>
+        <span class="card__slug">/mint</span>
+        <h2 class="card__title">The curve runs backwards</h2>
+        <p class="card__copy">Minting pushes the price <em>down</em>. Burning pushes it back <em>up</em>. The opposite of every market you know.</p>
+        <div class="card__art">
+          <div class="rate">
+            <span class="rate__label" id="curveAction">minting → price down</span>
+            <span class="rate__value" id="curvePrice">1.0000</span>
+          </div>
+          <svg viewBox="0 0 260 170" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+            <defs>
+              <linearGradient id="curveFillGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#ffffff" stop-opacity="0.20" />
+                <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+              </linearGradient>
+            </defs>
+            <g id="curveCardGrid"></g>
+            <path id="curveArea" fill="url(#curveFillGrad)" />
+            <path id="curveTrail" stroke="rgba(255,255,255,0.28)" stroke-width="1.25"
+                  stroke-dasharray="3 5" fill="none" />
+            <path id="curveLine" fill="none" stroke="#ffffff" stroke-width="2.25"
+                  stroke-linecap="round" stroke-linejoin="round" />
+            <g id="curveMarker">
+              <circle r="5.5" fill="#ff3d3d" />
+              <circle r="9.5" fill="none" stroke="rgba(255,255,255,0.32)" stroke-width="1.2" />
+            </g>
+          </svg>
+        </div>
+      </article>
+
+      <article class="card" data-card="leverage" data-reveal style="--reveal-delay: 0.07s">
+        <span class="card__slug">/leverage</span>
+        <h2 class="card__title">Leverage on the memes</h2>
+        <p class="card__copy">Mint against a coin's reserve and your position moves at a multiple of spot. No order book, no counterparty.</p>
+        <div class="card__art">
+          <div class="rate">
+            <span class="rate__label">spot <b id="spotPct">+0.0%</b></span>
+            <span class="rate__value" id="levPct">+0.0%</span>
+          </div>
+          <svg viewBox="0 0 260 170" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+            <defs>
+              <linearGradient id="levBarGrad" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0" stop-color="#00d95a" stop-opacity="0.10" />
+                <stop offset="1" stop-color="#7dffb4" stop-opacity="0.42" />
+              </linearGradient>
+              <linearGradient id="levFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#00d95a" stop-opacity="0.40" />
+                <stop offset="1" stop-color="#00d95a" stop-opacity="0" />
+              </linearGradient>
+            </defs>
+            <g id="levBars"></g>
+            <path id="levArea" fill="url(#levFill)" />
+            <path id="spotLine" fill="none" stroke="rgba(255,255,255,0.42)" stroke-width="1.5"
+                  stroke-dasharray="4 4" stroke-linecap="round" />
+            <path id="levLine" fill="none" stroke="#00d95a" stroke-width="2.25"
+                  stroke-linecap="round" stroke-linejoin="round" />
+            <circle id="levHead" r="4" fill="#eaffef" />
+          </svg>
+        </div>
+      </article>
+
+      <article class="card" data-card="markets" data-reveal style="--reveal-delay: 0.14s">
+        <span class="card__slug">/markets</span>
+        <h2 class="card__title">Every coin on Robinhood Chain</h2>
+        <p class="card__copy">AI, MEME, GRASS, BONER, MOO, SHROOM and the rest. Anyone can open a market for any token. No permission needed.</p>
+        <div class="card__art">
+          <div class="rail" id="railA"></div>
+          <div class="rail" id="railB"></div>
+          <div class="rail" id="railC"></div>
+        </div>
+      </article>
+
+      <article class="card" data-card="stake" data-reveal style="--reveal-delay: 0.21s">
+        <span class="card__slug">/stake</span>
+        <h2 class="card__title">Fees land on stakers</h2>
+        <p class="card__copy">Every mint, burn and LP move pays a 0.5% fee. Stake your ibAssets and take your share of all of it.</p>
+        <div class="card__art">
+          <svg viewBox="0 0 260 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <g id="feeRails"></g>
+            <g id="feeCoins"></g>
+          </svg>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================== Curve ============================= -->
+<section class="section">
+  <div class="shell" data-reveal>
+    <div class="scene" id="scene">
+      <svg class="scene__svg" viewBox="0 0 1440 660" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+
+          <linearGradient id="skyGrad" x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0"    stop-color="#0b1016" />
+            <stop offset="0.55" stop-color="#080b10" />
+            <stop offset="1"    stop-color="#05070a" />
+          </linearGradient>
+
+          <!-- The reserves held under the curve. -->
+          <linearGradient id="reserveGrad" gradientUnits="userSpaceOnUse" x1="0" y1="74" x2="0" y2="620">
+            <stop offset="0"   stop-color="#ffffff" stop-opacity="0.16" />
+            <stop offset="0.35" stop-color="#00d95a" stop-opacity="0.17" />
+            <stop offset="1"   stop-color="#00d95a" stop-opacity="0.06" />
+          </linearGradient>
+
+          <radialGradient id="topLight" gradientUnits="userSpaceOnUse" cx="330" cy="120" r="820">
+            <stop offset="0"   stop-color="#ffffff" stop-opacity="0.10" />
+            <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.02" />
+            <stop offset="1"   stop-color="#ffffff" stop-opacity="0" />
+          </radialGradient>
+
+          <radialGradient id="chipGlow" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0"   stop-color="#ffffff" stop-opacity="0.28" />
+            <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.08" />
+            <stop offset="1"   stop-color="#ffffff" stop-opacity="0" />
+          </radialGradient>
+
+          <radialGradient id="spotGlow" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0"   stop-color="#ffffff" stop-opacity="0.75" />
+            <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.20" />
+            <stop offset="1"   stop-color="#ffffff" stop-opacity="0" />
+          </radialGradient>
+
+          <filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="9" />
+          </filter>
+          <filter id="chipShadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="2" stdDeviation="2.4" flood-color="#000" flood-opacity="0.55" />
+          </filter>
+
+          <!-- Coins ride this; the visible stroke below is the same path. -->
+          <path id="ibcCurve" />
+        </defs>
+
+        <rect x="0" y="0" width="1440" height="660" fill="url(#skyGrad)" />
+        <rect x="0" y="0" width="1440" height="660" fill="url(#topLight)" />
+
+        <g id="curveGrid"></g>
+        <g id="curveAxes"></g>
+
+        <path id="curveFill" fill="url(#reserveGrad)" />
+        <path id="curveGlow" fill="none" stroke="#ffffff" stroke-width="7"
+              opacity="0.28" filter="url(#softGlow)" />
+        <path id="curveStroke" fill="none" stroke="#ffffff" stroke-width="2.75"
+              stroke-linecap="round" />
+
+        <g id="layerTicks"></g>
+        <g id="layerStreaks"></g>
+
+        <path id="spotGuide" fill="none" stroke="rgba(255,255,255,0.30)"
+              stroke-width="1.25" stroke-dasharray="4 7" />
+        <text id="spotPrice" x="90" y="0" fill="#ffffff" font-size="24" font-weight="600"
+              font-family="ui-monospace, SFMono-Regular, Menlo, monospace">1.0000</text>
+
+        <g id="layerFlash"></g>
+        <g id="layerFlow"></g>
+
+        <g id="spotMark">
+          <circle id="spotHalo" r="46" fill="url(#spotGlow)" />
+          <circle id="spotDot" r="9" fill="#ffffff" />
+          <circle r="16" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" />
+        </g>
+      </svg>
+
+      <div class="scene__overlay">
+        <h2 class="scene__headline">
+          <span class="scene__line">Buy it down.</span>
+          <span class="scene__line scene__line--accent">Sell it up.</span>
+        </h2>
+        <p class="scene__sub">
+          Price falls as ibAssets are minted and rises as they are burned. The reserve never leaves the curve.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== Footer ============================ -->
+<footer class="footer">
+  <div class="footer__top shell">
+    <div class="footer__brand">
+      <span class="footer__logo">
+        <svg viewBox="0 0 761 296" aria-hidden="true"><use href="#riskyMark" /></svg>
+      </span>
+      <p class="footer__copy">© 2026 risky. All rights reserved.</p>
+    </div>
+    <div class="footer__cols">
+      <div class="footer__col">
+        <span class="footer__head">Protocol</span>
+        <a href="docs/">Documentation</a>
+        <a href="https://github.com/RiskyMarkets/risky" target="_blank" rel="noopener">Open source</a>
+        <a href="https://github.com/bear-market-labs/ibc_contract" target="_blank" rel="noopener">Contract code</a>
+      </div>
+      <div class="footer__col">
+        <span class="footer__head">Socials</span>
+        <a href="https://x.com/risky" target="_blank" rel="noopener">X</a>
+      </div>
+    </div>
+  </div>
+  <svg class="footer__wordmark" viewBox="0 0 761 296" aria-hidden="true"><use href="#riskyMark" /></svg>
+</footer>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/build/three.webgpu.js",
+    "three/webgpu": "./vendor/three/build/three.webgpu.js",
+    "three/tsl": "./vendor/three/build/three.tsl.js"
+  }
+}
+</script>
+
+<script src="vendor/gsap/gsap.min.js"></script>
+<script src="vendor/gsap/MotionPathPlugin.min.js"></script>
+<script type="module" src="scripts/site.js"></script>
+</body>
+</html>

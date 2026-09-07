@@ -1,0 +1,312 @@
+/* ------------------------------------------------------------------ *
+ * Tokens
+ * ------------------------------------------------------------------ */
+:root {
+  --hood-green: #00d95a;
+  --hood-mint: #7dffb4;
+  --risk-red: #ff3d3d;
+
+  --ink: #05070a;
+  --text: #ffffff;
+  --text-dim: rgba(255, 255, 255, 0.52);
+
+  --shell: 1400px;
+  --gutter: clamp(18px, 4vw, 56px);
+
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+h2, p { margin: 0; }
+
+.shell {
+  width: 100%;
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
+/* Hidden host for the shared SVG mark, referenced by <use> across the page. */
+.sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------------ *
+ * Hero
+ * ------------------------------------------------------------------ */
+/* Taller than the viewport: the extra height is the runway for the burst. */
+.hero {
+  position: relative;
+  min-height: 230svh;
+}
+
+/* Fixed, so the word holds still while the page scrolls the burst along. */
+.hero__stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: var(--hero-fade, 1);
+  will-change: opacity;
+}
+
+.hero__stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(58% 42% at 50% 48%, rgba(255, 255, 255, 0.10), transparent 70%),
+    radial-gradient(70% 50% at 50% 46%, rgba(0, 217, 90, 0.12), transparent 72%),
+    radial-gradient(90% 60% at 50% 100%, rgba(5, 7, 10, 0.92), transparent 62%);
+}
+
+.hero__canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.hero__loader {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+  transition: opacity 0.5s ease;
+}
+
+.hero__loader.is-done { opacity: 0; }
+
+.hero__cta {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 22px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #111318;
+  font: 600 15px/1 var(--sans);
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.92);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  will-change: opacity, transform;
+}
+
+.hero__cta:hover { background: #f3f3f5; }
+
+.hero__cta span { font-size: 16px; }
+
+.hero__spinner {
+  width: 30px;
+  height: 30px;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  border-top-color: rgba(0, 217, 90, 0.85);
+  border-radius: 50%;
+  animation: hero-spin 0.8s linear infinite;
+}
+
+@keyframes hero-spin { to { transform: rotate(360deg); } }
+
+@keyframes risky-sheen { to { background-position: -220% 0; } }
+
+/* ------------------------------------------------------------------ *
+ * Sections
+ * ------------------------------------------------------------------ */
+.section {
+  position: relative;
+  z-index: 1;
+  background: var(--ink);
+  padding-block: clamp(48px, 7vw, 96px);
+}
+
+/* The first section slides over the fixed hero, closing the burst. */
+.section--after-hero {
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 32px 32px 0 0;
+  box-shadow: 0 -40px 90px rgba(0, 0, 0, 0.85);
+}
+
+.section__intro {
+  margin: 0 0 clamp(28px, 4vw, 48px);
+  text-align: center;
+}
+
+.section__heading {
+  margin: 0;
+  font-size: clamp(32px, 4.2vw, 56px);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.section__sub {
+  margin: 10px 0 0;
+  font-size: clamp(16px, 1.5vw, 20px);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--text-dim);
+}
+
+/* ------------------------------------------------------------------ *
+ * Scroll reveal
+ * ------------------------------------------------------------------ */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(22px);
+  filter: blur(6px);
+  transition: opacity 0.8s cubic-bezier(0.2, 0.7, 0.3, 1),
+              transform 0.8s cubic-bezier(0.2, 0.7, 0.3, 1),
+              filter 0.8s cubic-bezier(0.2, 0.7, 0.3, 1);
+  transition-delay: var(--reveal-delay, 0s);
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] { opacity: 1; transform: none; filter: none; transition: none; }
+}
+
+/* Less runway on a phone, where the same scroll costs more swipes. */
+@media (max-width: 720px) {
+  .hero { min-height: 185svh; }
+}
+
+/* ------------------------------------------------------------------ *
+ * Footer
+ * ------------------------------------------------------------------ */
+.footer {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  padding-block: clamp(40px, 6vw, 72px) 0;
+  background:
+    linear-gradient(180deg, var(--ink) 0%, #05140c 42%, #06341c 100%);
+}
+
+.footer__top {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 40px;
+  padding-block-end: clamp(48px, 10vw, 120px);
+}
+
+.footer__logo {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The word is the mark, so it carries the brand on its own. */
+.footer__logo svg {
+  width: 88px;
+  height: 34px;
+  fill: var(--text);
+  display: block;
+}
+
+.footer__copy {
+  margin-block-start: 12px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.footer__cols {
+  display: flex;
+  gap: clamp(40px, 8vw, 96px);
+}
+
+.footer__col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 90px;
+}
+
+.footer__head {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.footer__col a {
+  color: var(--text-dim);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.footer__col a:hover { color: var(--text); }
+
+/* The same mark as the hero, at full bleed and half sunk into the page edge. */
+.footer__wordmark {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: min(1180px, 88vw);
+  margin: 0 auto;
+  fill: rgba(0, 217, 90, 0.24);
+  pointer-events: none;
+  user-select: none;
+  /* The y descender is the bottom quarter; cropping there lands the fold on the baseline. */
+  transform: translateY(24%);
+}
+
+@media (max-width: 720px) {
+  .footer__top { flex-direction: column; gap: 28px; }
+}
+
+/* ------------------------------------------------------------------ *
+ * Top bar: appears once the burst has played, stays for the rest of the page
+ * ------------------------------------------------------------------ */
+.topbar {
+  position: fixed;
+  top: 14px;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--gutter);
+  text-decoration: none;
+  color: inherit;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.topbar.is-visible { opacity: 1; transform: none; pointer-events: auto; }
+.topbar__mark { width: 72px; height: 28px; fill: var(--text); display: block; }
+.topbar__btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 42px; padding: 0 20px; border-radius: 999px;
+  background: #ffffff; color: #111318;
+  font: 600 14px/1 var(--sans); letter-spacing: -0.02em;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.topbar:hover .topbar__btn { background: #f3f3f5; }

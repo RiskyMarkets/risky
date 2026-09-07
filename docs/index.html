@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>risky · Docs</title>
+<meta name="description" content="How risky works: inverse bonding curves for Robinhood Chain memecoins, explained in plain language." />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<meta name="theme-color" content="#05070a" />
+<style>
+  :root { --green:#00d95a; --mint:#7dffb4; --red:#ff3d3d; --ink:#05070a; --panel:#0b0e13; --line:rgba(255,255,255,.07); --text:#fff; --dim:rgba(255,255,255,.52); --faint:rgba(255,255,255,.34);
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif; --mono:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--ink); color:var(--text); font:16px/1.65 var(--sans); letter-spacing:-0.01em; -webkit-font-smoothing:antialiased; }
+  a { color:var(--mint); text-decoration:none; } a:hover { text-decoration:underline; }
+  .sprite { position:absolute; width:0; height:0; overflow:hidden; }
+  .bar { position:sticky; top:0; z-index:5; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px clamp(18px,4vw,40px); background:rgba(5,7,10,.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); }
+  .bar__logo svg { width:84px; height:auto; fill:#fff; display:block; }
+  .bar__links { display:flex; gap:18px; font-size:14px; color:var(--dim); }
+  .bar__links a { color:var(--dim); } .bar__links a:hover { color:#fff; text-decoration:none; }
+  .btn { display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 18px; border-radius:999px; background:#fff; color:#111318; font-weight:600; font-size:14px; letter-spacing:-0.02em; }
+  .btn:hover { background:#f1f2f5; text-decoration:none; }
+  .wrap { display:grid; grid-template-columns:220px minmax(0,1fr); gap:48px; max-width:1180px; margin:0 auto; padding:40px clamp(18px,4vw,40px) 100px; }
+  .toc { position:sticky; top:84px; align-self:start; display:flex; flex-direction:column; gap:2px; font-size:14px; }
+  .toc a { padding:7px 12px; border-radius:10px; color:var(--dim); } .toc a:hover { background:rgba(255,255,255,.05); color:#fff; text-decoration:none; }
+  .toc a.is-active { color:#fff; background:rgba(255,255,255,.07); box-shadow:inset 0 0 0 1px var(--line); }
+  .toc__head { margin:14px 12px 4px; font:500 11px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--faint); }
+  .doc { max-width:760px; }
+  h1 { margin:0 0 8px; font-size:clamp(34px,4.5vw,52px); font-weight:500; letter-spacing:-0.03em; line-height:1.1; }
+  .lede { font-size:20px; color:var(--dim); margin:0 0 40px; letter-spacing:-0.015em; }
+  h2 { margin:56px 0 12px; padding-top:8px; font-size:28px; font-weight:500; letter-spacing:-0.025em; scroll-margin-top:90px; }
+  h3 { margin:26px 0 8px; font-size:18px; font-weight:600; letter-spacing:-0.015em; }
+  p { margin:0 0 14px; color:rgba(255,255,255,.82); }
+  ul, ol { margin:0 0 14px; padding-left:22px; color:rgba(255,255,255,.82); } li { margin:4px 0; }
+  li::marker { color:var(--faint); }
+  b { font-weight:600; color:#fff; }
+  code { font:0.92em var(--mono); padding:1px 6px; border-radius:6px; background:rgba(255,255,255,.07); }
+  .kicker { display:inline-block; margin-bottom:10px; padding:5px 11px; border-radius:999px; background:rgba(255,255,255,.08); box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); font:500 11px/1 var(--mono); color:rgba(255,255,255,.72); }
+  .card { margin:18px 0; padding:18px 20px; border-radius:18px; background:linear-gradient(180deg,#10141b,var(--panel)); box-shadow:inset 0 0 0 1px var(--line); }
+  .card--green { box-shadow:inset 0 0 0 1px rgba(0,217,90,.3); background:rgba(0,217,90,.06); }
+  .card--red { box-shadow:inset 0 0 0 1px rgba(255,61,61,.3); background:rgba(255,61,61,.06); }
+  .card p:last-child, .card ul:last-child { margin-bottom:0; }
+  .card__label { font:500 11px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--faint); margin-bottom:8px; }
+  .steps { counter-reset:s; list-style:none; padding:0; margin:18px 0; display:grid; gap:10px; }
+  .steps li { position:relative; padding:14px 16px 14px 56px; border-radius:16px; background:rgba(255,255,255,.035); box-shadow:inset 0 0 0 1px var(--line); }
+  .steps li::before { counter-increment:s; content:counter(s); position:absolute; left:16px; top:14px; width:28px; height:28px; border-radius:50%; display:grid; place-items:center; background:var(--green); color:#04140a; font:700 13px/1 var(--mono); }
+  .steps b { display:block; margin-bottom:2px; }
+  .math { margin:14px 0; padding:14px 18px; border-radius:14px; background:#070a0e; box-shadow:inset 0 0 0 1px var(--line); font:15px/1.8 var(--mono); color:rgba(255,255,255,.85); overflow-x:auto; }
+  .math small { display:block; color:var(--faint); font-family:var(--sans); font-size:13px; }
+  details { margin:14px 0; border-radius:14px; background:rgba(255,255,255,.03); box-shadow:inset 0 0 0 1px var(--line); }
+  summary { cursor:pointer; padding:12px 16px; font-weight:600; color:var(--dim); list-style:none; } summary::-webkit-details-marker { display:none; }
+  summary::before { content:"▸ "; color:var(--faint); } details[open] summary::before { content:"▾ "; }
+  details > :not(summary) { padding:0 16px; } details > :last-child:not(summary) { padding-bottom:14px; }
+  table { width:100%; border-collapse:collapse; margin:14px 0; font-size:14px; }
+  th { text-align:left; padding:8px 10px; font:500 11px/1 var(--mono); letter-spacing:.05em; text-transform:uppercase; color:var(--faint); border-bottom:1px solid var(--line); }
+  td { padding:10px; border-bottom:1px solid var(--line); vertical-align:top; } td.mono { font-family:var(--mono); font-size:13px; }
+  tr:last-child td { border-bottom:0; }
+  .up { color:var(--mint); } .down { color:var(--red); }
+  figure { margin:18px 0; padding:14px; border-radius:18px; background:rgba(255,255,255,.025); box-shadow:inset 0 0 0 1px var(--line); }
+  figure svg { display:block; width:100%; height:auto; } figcaption { margin-top:8px; font-size:13px; color:var(--dim); text-align:center; }
+  dl.gloss { display:grid; grid-template-columns:max-content 1fr; gap:10px 18px; } dl.gloss dt { font-weight:600; } dl.gloss dd { margin:0; color:rgba(255,255,255,.78); }
+  footer { max-width:1180px; margin:0 auto; padding:0 clamp(18px,4vw,40px) 60px; color:var(--faint); font-size:13px; }
+  @media (max-width:860px) { .wrap { grid-template-columns:minmax(0,1fr); gap:24px; } .toc { position:static; flex-direction:row; flex-wrap:wrap; } .toc__head { display:none; } dl.gloss { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true"><defs><g id="riskyMark"></g></defs></svg>
+
+<header class="bar">
+  <a class="bar__logo" href="../" aria-label="risky home"><svg viewBox="0 0 761 296" aria-hidden="true"><use href="#riskyMark" /></svg></a>
+  <nav class="bar__links"><a href="#start">Quick start</a><a href="#curve">The curve</a><a href="#risks">Risks</a><a href="#contracts">Contracts</a><a href="https://github.com/RiskyMarkets/risky" target="_blank" rel="noopener">GitHub</a></nav>
+  <a class="btn" href="../app/">Open app ↗</a>
+</header>
+
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <span class="toc__head">Basics</span>
+    <a href="#what">What risky is</a>
+    <a href="#start">Quick start</a>
+    <a href="#curve">The curve</a>
+    <span class="toc__head">Using it</span>
+    <a href="#mint">Minting and burning</a>
+    <a href="#lp">Providing liquidity</a>
+    <a href="#stake">Staking and fees</a>
+    <a href="#create">Creating a curve</a>
+    <span class="toc__head">Reference</span>
+    <a href="#risks">Risks</a>
+    <a href="#contracts">Contracts</a>
+    <a href="#glossary">Glossary</a>
+  </nav>
+
+  <main class="doc">
+    <span class="kicker">/docs</span>
+    <h1>How risky works</h1>
+    <p class="lede">Inverse bonding curves for Robinhood Chain memecoins. Buying pushes the price down. Selling pushes it up. Nobody holds the keys.</p>
+
+    <h2 id="what">What risky is</h2>
+    <p>risky is a set of markets on Robinhood Chain where each market, called a <b>curve</b>, mints its own token, called an <b>ibAsset</b>, against a reserve coin. Put in ETH, get ibETH. Put in a memecoin, get the ib-version of that memecoin.</p>
+    <p>The twist is the pricing rule. On a normal market, buying makes the price go up. On risky, <b class="down">buying makes the price go down</b> and <b class="up">selling makes it go up</b>. The curve is the only counterparty: there is no order book, no market maker, and no one to run out of liquidity, because the reserve never leaves the curve except when someone sells or withdraws.</p>
+    <div class="card card--green"><div class="card__label">In one line</div><p>Price = reserve ÷ (2 × minted supply). More minted, lower price. Less minted, higher price.</p></div>
+    <p>risky runs an unmodified, permissionless deployment of the open-source Inverse Bonding Curve contracts. We turned the protocol's own fee off, then gave up the admin key. What is on chain now is what will be on chain forever.</p>
+
+    <h2 id="start">Quick start</h2>
+    <ol class="steps">
+      <li><b>Get ETH on Robinhood Chain.</b> Bridge from Ethereum with the Arbitrum bridge, or withdraw from Robinhood. You need a little for gas, plus whatever you want to trade.</li>
+      <li><b>Open the app and connect MetaMask.</b> The app asks MetaMask to switch to Robinhood Chain if it is on another network.</li>
+      <li><b>Pick a curve on Explore.</b> Each row is one ibAsset, with its current price, reserve, and what stakers and liquidity providers are earning.</li>
+      <li><b>Mint.</b> Type how much reserve to spend; the app shows what you receive and how far the price moves. Confirm once in MetaMask.</li>
+      <li><b>Stake if you want the fees.</b> Staked ibAssets collect a share of every trade on that curve. Claim whenever you like.</li>
+    </ol>
+    <p>Everything is one transaction, signed in your wallet. The app never asks for your seed phrase or private key.</p>
+
+    <h2 id="curve">The curve</h2>
+    <p>A bonding curve is a rule that sets the price of a token from how many exist. Normal bonding curves slope upward: each new token costs more than the last. An <b>inverse</b> bonding curve slopes downward: each new token is cheaper than the last, and each token burned makes the rest worth more.</p>
+    <figure>
+      <svg viewBox="0 0 600 240" aria-hidden="true">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset="1" stop-color="#00d95a" stop-opacity="0"/></linearGradient></defs>
+        <g stroke="rgba(255,255,255,.06)"><line x1="20" x2="580" y1="70" y2="70"/><line x1="20" x2="580" y1="125" y2="125"/><line x1="20" x2="580" y1="180" y2="180"/></g>
+        <path d="M40 30 C 90 150, 180 190, 560 205 L560 225 L40 225 Z" fill="url(#g)"/>
+        <path d="M40 30 C 90 150, 180 190, 560 205" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="205" y1="152" x2="205" y2="225" stroke="rgba(255,255,255,.25)" stroke-dasharray="3 5"/>
+        <circle cx="205" cy="152" r="6" fill="#fff"/><circle cx="205" cy="152" r="11" fill="none" stroke="rgba(255,255,255,.4)"/>
+        <line x1="205" y1="152" x2="330" y2="185" stroke="#ff3d3d" stroke-width="2" stroke-dasharray="4 4"/><circle cx="330" cy="185" r="6" fill="#ff3d3d"/>
+        <text x="345" y="178" fill="#ff3d3d" font-size="12" font-family="ui-monospace,Menlo,monospace">mint → price falls</text>
+        <line x1="205" y1="152" x2="120" y2="95" stroke="#00d95a" stroke-width="2" stroke-dasharray="4 4"/><circle cx="120" cy="95" r="6" fill="#00d95a"/>
+        <text x="62" y="80" fill="#00d95a" font-size="12" font-family="ui-monospace,Menlo,monospace">burn → price rises</text>
+        <text x="24" y="20" fill="rgba(255,255,255,.4)" font-size="11" font-family="ui-monospace,Menlo,monospace">PRICE</text>
+        <text x="500" y="238" fill="rgba(255,255,255,.4)" font-size="11" font-family="ui-monospace,Menlo,monospace">MINTED →</text>
+      </svg>
+      <figcaption>The white dot is the current market. Minting slides it right and down; burning slides it left and up.</figcaption>
+    </figure>
+    <h3>A worked example</h3>
+    <p>A curve holds 2 ETH of reserve and has 1 ibETH minted. Price is 2 ÷ (2 × 1) = <b>1 ETH per ibETH</b>.</p>
+    <ul>
+      <li>Someone mints with 1 ETH. Reserve becomes 3 ETH, minted supply becomes 2.25 ibETH, so the price is now 3 ÷ 4.5 = <b class="down">0.667 ETH</b>. The minter received 1.25 ibETH, less the 0.5% fee, for 1 ETH, an average of 0.80 ETH each.</li>
+      <li>If they burn it all straight back, the curve returns about 0.99 ETH. The difference is the two fees, which went to stakers and liquidity providers.</li>
+      <li>If instead a second person mints after them, the price drops further and the first minter's ibETH is worth less. If the second person burns, it is worth more.</li>
+    </ul>
+    <p>That is the whole game: <b>you are betting on what other people do next.</b> Holding ibAssets pays off when the crowd sells and loses when the crowd buys.</p>
+    <h3>Why a price like "20,000 ETH" is normal</h3>
+    <p>The opening price of a market is 2 ÷ seed. A market seeded with 0.0001 ETH opens at 20,000 ETH per ibETH, with a total supply of 0.0000000025 ibETH. Nothing is wrong: one whole ibETH is simply an enormous slice of a tiny market, so the unit price is enormous too. It is a label, not a valuation.</p>
+    <p>What matters is the <b>direction</b>. The app shows how much 1 ETH buys, how the market has moved since it opened and over the last day, and what your position is worth in ETH. Those numbers are meaningful on every market regardless of how it was seeded. A market seeded with 2 ETH opens at a tidy 1 : 1 instead.</p>
+    <details><summary>For the curious: the math</summary>
+      <p>Every risky curve uses a utilization of ½, which fixes the shape. With reserve <code>R</code> and minted supply <code>S</code>:</p>
+      <div class="math">price = R ÷ (2·S)<br>invariant = R ÷ √S &nbsp;<small>unchanged by mints and burns; updated by liquidity moves</small></div>
+      <p>Minting with <code>ΔR</code> reserve creates <code>ΔS = S·((1 + ΔR/R)² − 1)</code> new ibAssets. Burning <code>ΔS</code> ibAssets returns <code>ΔR = R·(1 − √(1 − ΔS/S))</code> reserve. Both are exactly what the app quotes before the fee.</p>
+    </details>
+
+    <h2 id="mint">Minting and burning</h2>
+    <p><b>Mint</b> means pay reserve, receive ibAsset. <b>Burn</b> means pay ibAsset, receive reserve. The curve is always open, at any size, at the price the rule gives.</p>
+    <ul>
+      <li><b>Fee:</b> 0.5% of what you produce, taken in ibAsset. Half goes to liquidity providers, half to stakers. risky takes nothing.</li>
+      <li><b>Price impact:</b> shown before you confirm. Large mints move the price a lot because the curve is steep near its start.</li>
+      <li><b>Slippage limit:</b> your transaction fails instead of filling at a worse price than you allowed. The default is 1%, adjustable under Advanced.</li>
+      <li><b>Reserve divergence:</b> a second guard that fails the trade if the curve's reserve changed more than you allowed since you quoted. Default 5%.</li>
+    </ul>
+    <p>Both guards exist because other people's trades can land before yours in the same block. They make a bad fill impossible; they can also make a fair fill fail on a busy curve, in which case just retry.</p>
+    <div class="card"><div class="card__label">Why the app matters</div><p>The curve contracts take payment by transfer first, call second. Sent on their own, tokens sitting in a curve can be claimed by anyone. The app routes every trade through the Router, which does both steps in one transaction so that cannot happen. Never send tokens straight to a curve address.</p></div>
+
+    <h2 id="lp">Providing liquidity</h2>
+    <p>Liquidity providers add reserve to a curve without minting. That deepens the market: after an add, the same size trade moves the price less. In return, LPs collect 0.25% of every mint, burn, add and remove on that curve.</p>
+    <h3>What you get</h3>
+    <ul>
+      <li>An <b>LP position</b> sized by your share of the reserve. It is not a token: it cannot be transferred or sold, only closed.</li>
+      <li>An <b>ibAsset credit</b>, the ibAssets the curve counts as yours but has not handed over. You receive them, or owe them, when you close.</li>
+    </ul>
+    <h3>The rules</h3>
+    <ul>
+      <li>One position per address. To change size, close it and open a new one.</li>
+      <li>Positions open and close in full.</li>
+      <li>Adding and removing each cost 0.5% of the reserve moved, split between LPs and stakers.</li>
+    </ul>
+    <h3>Closing, and why you might owe ibAssets</h3>
+    <p>When you close, you take back your share of the reserve. The curve also has to retire your share of the minted supply. If the price is <b>higher</b> than when you entered, your credit covers it with some left over, and you receive the extra ibAssets. If the price is <b>lower</b>, your credit is not enough and you must hand over the difference from your wallet. The app shows which case you are in and blocks the close if you do not hold enough.</p>
+    <p>Put simply: an LP position gains when the price moves away from where you entered, in either direction, and collects fees the whole time.</p>
+    <details><summary>For the curious: the math</summary>
+      <p>Adding <code>ΔR</code> reserve to a curve with total LP supply <code>L</code> mints <code>ΔL = (ΔR/R)·L</code> LP units and credits <code>ΔS = (ΔR/R)·S</code> ibAssets. Price does not change. Closing <code>ΔL</code> returns <code>(ΔL/L)·R</code> reserve and retires <code>(ΔL/L)·S</code> ibAssets; the gap between that and your credit is what you receive or owe.</p>
+    </details>
+
+    <h2 id="stake">Staking and fees</h2>
+    <p>Stake ibAssets on their curve to collect fees. Stakers as a group receive 0.25% of every mint, burn, add and remove, split pro rata by stake. Fees arrive in the same tokens the trade produced, so a stake earns a mix of ibAsset and reserve.</p>
+    <table>
+      <thead><tr><th>Action</th><th>Fee</th><th>Paid in</th><th>To LPs</th><th>To stakers</th><th>To risky</th></tr></thead>
+      <tbody>
+        <tr><td>Mint</td><td>0.5%</td><td>ibAsset</td><td>0.25%</td><td>0.25%</td><td>0</td></tr>
+        <tr><td>Burn</td><td>0.5%</td><td>ibAsset</td><td>0.25%</td><td>0.25%</td><td>0</td></tr>
+        <tr><td>Add liquidity</td><td>0.5%</td><td>reserve</td><td>0.25%</td><td>0.25%</td><td>0</td></tr>
+        <tr><td>Remove liquidity</td><td>0.5%</td><td>reserve, and ibAsset if any is returned</td><td>0.25%</td><td>0.25%</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li>Staked ibAssets cannot be burned or moved until you unstake. Unstaking is instant.</li>
+      <li>The <b>first staker</b> on a curve sweeps every staker fee that accrued before anyone staked.</li>
+      <li>Because later minters get more ibAssets per unit of reserve, latecomers can out-stake early entrants. Early does not mean permanent.</li>
+      <li>Rewards do not compound. Claim them on the Claim tab; staking or unstaking does not claim.</li>
+    </ul>
+
+    <h2 id="create">Creating a curve</h2>
+    <p>Anyone can open a curve for any token on Robinhood Chain, or for ETH. Whoever does it first for a given token owns that first move permanently: there is exactly one curve per reserve asset, forever.</p>
+    <ol class="steps">
+      <li><b>Pick the reserve asset.</b> ETH, one of the listed memecoins, or any token address.</li>
+      <li><b>Choose the seed.</b> The reserve you put in sets the starting price and supply. Price starts at <code>2 ÷ seed</code> and supply at <code>seed² ÷ 4</code>, so a seed of 2 opens at a clean 1 : 1. The app previews both.</li>
+      <li><b>Create.</b> One transaction. You receive the initial LP position; 0.01% of it is burned so the curve can never be fully drained. The minimum seed is 0.0001. There is no creation fee.</li>
+    </ol>
+    <p>Small seeds are valid but open at very high unit prices with tiny supply. That is only a matter of how the numbers look, not how the curve behaves, but the app warns when the starting price is far from 1.</p>
+
+    <h2 id="risks">Risks</h2>
+    <div class="card card--red"><div class="card__label">Read this before you trade</div>
+      <ul>
+        <li><b>No admin, no rescue.</b> The admin key was renounced at deployment. Nothing can be paused, upgraded or changed. That is the point, and it also means there is no emergency stop if something goes wrong.</li>
+        <li><b>Unaudited code.</b> The contracts are the upstream open-source implementation, well tested but never audited. Use amounts you can afford to lose.</li>
+        <li><b>ibAssets fall when others buy.</b> This is the design, not a bug. Holding an ibAsset while a curve is popular loses money.</li>
+        <li><b>Memecoins are memecoins.</b> A curve on a token that goes to zero holds a reserve that is worth zero.</li>
+        <li><b>Trades can front-run each other.</b> The slippage and divergence guards protect you from a bad fill, but a fair fill can fail and need a retry.</li>
+      </ul>
+    </div>
+
+    <h2 id="contracts">Contracts</h2>
+    <p>Deployed on Robinhood Chain (chain ID 4663) on 7 September 2026, compiled with Solidity 0.8.18 and the optimizer at 200 runs. Source is GPL-3.0.</p>
+    <table>
+      <thead><tr><th>Contract</th><th>Address</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td>Factory</td><td class="mono"><a href="https://robinhoodchain.blockscout.com/address/0xF9d9DdDc5cbD08021953C346C1E325F0CC03324a">0xF9d9DdDc5cbD08021953C346C1E325F0CC03324a</a></td><td>Creates curves. The app's Explore list reads from here.</td></tr>
+        <tr><td>Router</td><td class="mono"><a href="https://robinhoodchain.blockscout.com/address/0x270cf29e1Ab9B112a5de379901Fcaf698761846f">0x270cf29e1Ab9B112a5de379901Fcaf698761846f</a></td><td>Every trade goes through here. Wraps and unwraps ETH.</td></tr>
+        <tr><td>Admin</td><td class="mono"><a href="https://robinhoodchain.blockscout.com/address/0x8D63C5ADCA11Ca3FFF616B695915F8Ce45028B3b">0x8D63C5ADCA11Ca3FFF616B695915F8Ce45028B3b</a></td><td>Holds the fee schedule and curve logic pointer. Owner is 0x0.</td></tr>
+        <tr><td>Curve logic</td><td class="mono"><a href="https://robinhoodchain.blockscout.com/address/0xb4331954812D80bA2e2cD81A1916B17bc8Dd54a1">0xb4331954812D80bA2e2cD81A1916B17bc8Dd54a1</a></td><td>The code every curve runs. Immutable.</td></tr>
+        <tr><td>Curve library</td><td class="mono"><a href="https://robinhoodchain.blockscout.com/address/0x2E2A835F427a24cB3e384BfA0A51Ae04B87E3684">0x2E2A835F427a24cB3e384BfA0A51Ae04B87E3684</a></td><td>Shared math and reward accounting.</td></tr>
+        <tr><td>WETH</td><td class="mono"><a href="https://robinhoodchain.blockscout.com/address/0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73">0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73</a></td><td>Robinhood Chain's canonical wrapped ETH, used by ETH curves.</td></tr>
+      </tbody>
+    </table>
+    <p>Verified on chain after deployment: the Admin's owner is the zero address, <code>pause()</code> reverts for everyone, and the fee schedule reads 0.25% / 0.25% / 0 on all four actions.</p>
+    <div class="card"><div class="card__label">Open source</div>
+      <p>Everything risky runs is public. This site and the app are at <a href="https://github.com/RiskyMarkets/risky">github.com/RiskyMarkets/risky</a>. The contracts are the unmodified Inverse Bonding Curve implementation at <a href="https://github.com/bear-market-labs/ibc_contract">github.com/bear-market-labs/ibc_contract</a>, compiled with the optimizer on, deployed as-is, then renounced. Both are GPL-3.0. Read the code, run the tests, compare the deployed bytecode.</p></div>
+
+    <h2 id="glossary">Glossary</h2>
+    <dl class="gloss">
+      <dt>Curve</dt><dd>One market. Holds one reserve asset and mints one ibAsset.</dd>
+      <dt>ibAsset</dt><dd>The token a curve mints. ibETH, ibMOO, and so on. A normal ERC-20 you can hold, move, stake or burn.</dd>
+      <dt>Reserve</dt><dd>The coin locked in a curve. What you pay to mint and receive when you burn.</dd>
+      <dt>Mint / Burn</dt><dd>Buy from the curve / sell back to the curve.</dd>
+      <dt>Minted supply</dt><dd>How many ibAssets exist, including those credited to liquidity providers. Sets the price together with the reserve.</dd>
+      <dt>LP position</dt><dd>A non-transferable record of reserve you added. Earns fees; closes in full.</dd>
+      <dt>ibAsset credit</dt><dd>ibAssets the curve counts as an LP's, settled when the position closes.</dd>
+      <dt>Seed</dt><dd>The reserve a creator puts in to open a curve. Fixes the starting price and supply.</dd>
+      <dt>Slippage</dt><dd>The worst price you will accept. The trade fails rather than fill below it.</dd>
+    </dl>
+  </main>
+</div>
+<footer>© 2026 risky. Open source: <a href="https://github.com/RiskyMarkets/risky">site and app</a> · <a href="https://github.com/bear-market-labs/ibc_contract">contracts</a>. Built on the Inverse Bonding Curve contracts (GPL-3.0). This page is risky's own documentation; it describes the risky deployment, including its zero protocol fee.</footer>
+
+<script type="module">
+  import { buildRiskyMark } from '../scripts/risky-mark.js';
+  buildRiskyMark();
+  const links = [...document.querySelectorAll('#toc a')];
+  const heads = links.map((a) => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  function mark() {
+    let cur = heads[0];
+    for (const h of heads) if (h.getBoundingClientRect().top < 120) cur = h;
+    links.forEach((a) => a.classList.toggle('is-active', a.getAttribute('href') === '#' + cur.id));
+  }
+  mark(); addEventListener('scroll', mark, { passive: true });
+</script>
+</body>
+</html>

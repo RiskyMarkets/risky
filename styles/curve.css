@@ -1,0 +1,95 @@
+/* The curve scene: reserves mint down the curve, burns carry it back up. */
+
+.scene {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1440 / 660;
+  min-height: 420px;
+  border-radius: 34px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #05070a;
+}
+
+/* Inner hairline + vignette, matched to the card treatment elsewhere on the page. */
+.scene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  background: radial-gradient(125% 95% at 50% 112%, transparent 58%, rgba(0, 0, 0, 0.42) 100%);
+}
+
+.scene__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.scene__overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 0 clamp(24px, 4vw, 56px) clamp(28px, 4vw, 44px);
+  pointer-events: none;
+}
+
+/* The scene's own scrim, so the headline holds up over whatever is moving under it. */
+.scene__overlay::before {
+  content: "";
+  position: absolute;
+  inset: -190px 0 0;
+  z-index: -1;
+  background: linear-gradient(180deg, transparent 0%, rgba(5, 7, 10, 0.72) 46%, rgba(5, 7, 10, 0.95) 78%);
+}
+
+.scene__headline {
+  font-size: clamp(26px, 3.3vw, 52px);
+  line-height: 1.22;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.scene__line { display: block; }
+
+.scene__line--accent,
+.scene__hl {
+  background: linear-gradient(90deg, #ffffff 0%, var(--hood-mint) 40%, var(--hood-green) 68%, #ffffff 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: risky-sheen 7s linear infinite;
+}
+
+.scene__sub {
+  margin-bottom: 6px;
+  max-width: 27ch;
+  text-align: right;
+  font-size: clamp(12px, 1.05vw, 16px);
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+
+@media (max-width: 860px) {
+  .scene {
+    aspect-ratio: 3 / 4;
+    max-height: 78svh;
+  }
+  .scene__overlay { justify-content: center; }
+  .scene__headline { text-align: center; }
+  .scene__sub { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene__line--accent,
+  .scene__hl { animation: none; }
+}

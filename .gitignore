@@ -1,0 +1,5 @@
+# Local tooling and scratch
+.claude/
+.DS_Store
+# Source screenshots the token avatars were cut from; the cut avatars in brand/tokens/ are what ships.
+brand/tokens/source/
