@@ -234,26 +234,40 @@ async function ensureAllowance(token, spender, amount, symbol, log) {
 /* ------------------------------------------------------------------ *
  * Curve data
  * ------------------------------------------------------------------ */
-const state = { curves: [], loaded: false, user: {}, view: null, curve: null, tab: 'buy', histories: {} };
+const state = { curves: [], loaded: false, user: {}, view: null, curve: null, tab: 'buy', histories: {}, spots: {} };
 
-/* Token icons: DexScreener's artwork for the reserve token, the same image traders already know it by. */
+/* DexScreener knows the reserve coins: their artwork, spot price and 24h move. One fetch per token per visit. */
+const dexCache = {};
+function dexPairs(addr) {
+  const key = (addr || '').toLowerCase(); if (!key || NET !== 'mainnet') return Promise.resolve([]);
+  if (!dexCache[key]) {
+    dexCache[key] = fetch(`https://api.dexscreener.com/token-pairs/v1/robinhood/${addr}`)
+      .then((r) => (r.ok ? r.json() : [])).then((p) => (Array.isArray(p) ? p.filter((x) => same(x.baseToken?.address, addr)) : []))
+      .catch(() => []);
+  }
+  return dexCache[key];
+}
 const iconCache = {};
 async function iconFor(addr) {
   const key = (addr || '').toLowerCase(); if (!key) return null;
   if (key in iconCache) return iconCache[key];
   try { const v = localStorage.getItem('risky:icon:' + key); if (v) { iconCache[key] = v; return v; } } catch {}
-  let url = null;
-  if (NET === 'mainnet') {
-    try {
-      const pairs = await fetch(`https://api.dexscreener.com/token-pairs/v1/robinhood/${addr}`).then((r) => (r.ok ? r.json() : []));
-      const hit = (Array.isArray(pairs) ? pairs : []).find((p) => same(p.baseToken?.address, addr) && p.info?.imageUrl);
-      url = hit ? hit.info.imageUrl : null;
-    } catch {}
-  }
+  const hit = (await dexPairs(addr)).find((p) => p.info?.imageUrl);
+  const url = hit ? hit.info.imageUrl : null;
   iconCache[key] = url;
   if (url) { try { localStorage.setItem('risky:icon:' + key, url); } catch {} }
   return url;
 }
+/* Spot price and 24h change of the reserve coin, from its deepest pool. */
+async function spotFor(addr) {
+  const key = (addr || '').toLowerCase();
+  if (state.spots[key] !== undefined) return state.spots[key];
+  const pairs = await dexPairs(addr);
+  const best = pairs.slice().sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+  const spot = best && best.priceUsd ? { usd: Number(best.priceUsd), h24: best.priceChange?.h24 != null ? Number(best.priceChange.h24) / 100 : null, liq: best.liquidity?.usd || 0, url: best.url } : null;
+  state.spots[key] = spot; return spot;
+}
+const usd = (n) => n === null || n === undefined || !isFinite(n) ? '' : n >= 1e6 ? '$' + (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? '$' + (n / 1e3).toFixed(1) + 'k' : n >= 1 ? '$' + n.toFixed(2) : n > 0 ? '$' + fmtPlain(n, { sig: 3 }) : '$0';
 /* Icon order: DexScreener → the site's own roster art → the ticker's first letters. */
 function identity(symbol, isWeth, icon) {
   const sym = isWeth ? 'ETH' : symbol;
@@ -397,15 +411,18 @@ async function showExplore() {
   renderExplore();
   // Moves and trade counts need each market's history; fill them in as they arrive.
   Promise.all(state.curves.slice(0, 24).map((c) => getHistory(c).catch((e) => { console.warn('history failed for', c.ibSym, e.message); return null; }))).then(() => renderExplore());
+  Promise.all(state.curves.slice(0, 24).map((c) => spotFor(c.reserveToken))).then(() => renderExplore());
 }
 function renderExplore() {
   if (state.view !== 'explore') return;
   const rows = state.curves.map((c) => {
     const h = state.histories[c.addr]; const sum = summarize(c, Array.isArray(h) ? h : null);
+    const sp = state.spots[c.reserveToken.toLowerCase()];
     return `
     <tr class="is-link" data-go="#/curve/${c.addr}">
       <td><div class="asset">${c.id.html}<div><div class="asset__name">${esc(c.ibSym)}</div><span class="asset__sub">pay ${esc(c.id.label)}, get ${esc(c.ibSym)}</span></div></div></td>
-      <td>${fmt(c.reserve)} <span class="dim">${esc(c.id.label)}</span></td>
+      <td>${sp === undefined ? '<span class="faint">…</span>' : sp ? `${usd(sp.usd)}<br>${move(sp.h24)}` : '<span class="faint">—</span>'}</td>
+      <td>${fmt(c.reserve)} <span class="dim">${esc(c.id.label)}</span>${sp && sp.usd ? `<br><span class="dim">${usd(c.reserve * sp.usd)}</span>` : ''}</td>
       <td>${Array.isArray(h) ? move(sum.day) : '<span class="faint">…</span>'}</td>
       <td>${Array.isArray(h) ? move(sum.sinceOpen) : '<span class="faint">…</span>'}</td>
       <td>${Array.isArray(h) ? (sum.trades24 || '<span class="faint">0</span>') : '<span class="faint">…</span>'}</td>
@@ -419,7 +436,7 @@ function renderExplore() {
     </div>
     <div class="card">
       <div class="card__head"><span class="card__title">Markets</span><span class="dim">${state.curves.length} open · no admin key</span></div>
-      ${state.curves.length ? `<div style="overflow-x:auto"><table class="table"><thead><tr><th>Market</th><th>Value locked</th><th>24h</th><th>Since open</th><th>Trades 24h</th><th>Stakers earn</th></tr></thead><tbody>${rows}</tbody></table></div>`
+      ${state.curves.length ? `<div style="overflow-x:auto"><table class="table"><thead><tr><th>Market</th><th>Coin spot · 24h</th><th>Value locked</th><th>ibAsset 24h</th><th>Since open</th><th>Trades 24h</th><th>Stakers earn</th></tr></thead><tbody>${rows}</tbody></table></div>`
         : `<div class="empty">No markets yet. The first person to open one for a coin owns that first move forever.<br><a class="btn" href="#/create">Open the first market</a></div>`}
     </div>
     <p class="dim" style="margin:14px 4px 0;font-size:13px">New here? <a href="../docs/" class="up">The docs</a> cover the curve, fees, liquidity and what can go wrong in about five minutes.</p>`;
@@ -489,6 +506,7 @@ async function showCurve(addr) {
   const svg = $('chart');
   svg.addEventListener('mousemove', (e) => chartHover(e)); svg.addEventListener('mouseleave', () => chartHover(null)); svg.addEventListener('click', (e) => chartClick(e));
   renderStats(); drawChart(null); renderPanel();
+  spotFor(c.reserveToken).then(() => { if (state.curve === c) renderStats(); });
   getHistory(c).then((h) => { if (state.curve === c) { state.chart.history = h; renderStats(); drawChart(state.chart.preview); } }).catch(() => { if (state.curve === c) { state.chart.history = []; renderStats(); drawChart(state.chart.preview); } });
   if (wallet.account) { state.user[c.addr] = await loadUser(c); renderPosition(); updateQuote(); }
 }
@@ -496,11 +514,13 @@ function renderStats() {
   const c = state.curve; const h = state.chart?.history; const sum = summarize(c, Array.isArray(h) ? h : null);
   const R = esc(c.id.label), IB = esc(c.ibSym);
   const odd = c.price > 100 || c.price < 0.01;
+  const sp = state.spots[c.reserveToken.toLowerCase()];
   $('priceLine').innerHTML = `
     <div class="priceline__main"><b>1 ${R}</b> buys <b>${fmt(1 / c.price)} ${IB}</b><span class="dim"> · 1 ${IB} = ${fmt(c.price)} ${R}</span></div>
+    ${sp ? `<div class="priceline__spot">${R} spot <b>${usd(sp.usd)}</b> ${move(sp.h24)} <span class="dim">24h</span>${sp.url ? ` · <a class="dim" href="${esc(sp.url)}" target="_blank" rel="noopener">DexScreener ↗</a>` : ''}</div>` : ''}
     ${odd ? `<details class="why"><summary>Why does the price look strange?</summary><p>This market was opened with a very ${c.price > 100 ? 'small' : 'large'} seed, so one whole ${IB} is a ${c.price > 100 ? 'huge' : 'tiny'} slice of it. The unit price is just a label. What matters is direction: it goes <span class="down">down</span> when people mint and <span class="up">up</span> when they burn, and your position moves with it.</p></details>` : ''}`;
   $('stats').innerHTML = `
-    <div class="stat"><div class="stat__label">Value locked</div><div class="stat__value">${fmt(c.reserve)}<small>${R}</small></div><div class="stat__sub">backing every ${IB}</div></div>
+    <div class="stat"><div class="stat__label">Value locked</div><div class="stat__value">${fmt(c.reserve)}<small>${R}</small></div><div class="stat__sub">${sp && sp.usd ? usd(c.reserve * sp.usd) + ' · ' : ''}backing every ${IB}</div></div>
     <div class="stat"><div class="stat__label">Last 24h</div><div class="stat__value">${Array.isArray(h) ? move(sum.day) : '<span class="faint">…</span>'}</div><div class="stat__sub">${sum.trades24} trade${sum.trades24 === 1 ? '' : 's'}</div></div>
     <div class="stat"><div class="stat__label">Since open</div><div class="stat__value">${Array.isArray(h) ? move(sum.sinceOpen) : '<span class="faint">…</span>'}</div><div class="stat__sub">${sum.opened ? 'opened ' + new Date(sum.opened).toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''}</div></div>
     <div class="stat"><div class="stat__label">Staked</div><div class="stat__value">${fmt(c.totalStaked)}<small>${IB}</small></div><div class="stat__sub">${c.stakeApr === null ? 'nobody yet — first staker takes all fees so far' : 'earning about ' + (c.stakeApr * 100).toFixed(1) + '% a year'}</div></div>`;

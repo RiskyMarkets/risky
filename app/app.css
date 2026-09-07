@@ -194,3 +194,7 @@ input { font: inherit; color: inherit; }
 .next__title { font: 500 11px/1 var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--faint); margin-bottom: 2px; }
 .next .meta__row span:first-child { color: var(--dim); }
 .stat__value .up, .stat__value .down, .stat__value .dim { font-size: 20px; }
+.priceline__spot { margin-top: 4px; font-size: 13px; color: var(--dim); }
+.priceline__spot b { font-family: var(--mono); font-weight: 500; color: var(--text); }
+.priceline__spot a { text-decoration: none; } .priceline__spot a:hover { color: var(--text); }
+.table td { line-height: 1.35; }
