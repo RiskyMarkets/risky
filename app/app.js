@@ -97,22 +97,33 @@ const link = (kind, x, text) => `<a href="${CHAIN.explorer}/${kind}/${x}" target
 /* ------------------------------------------------------------------ *
  * RPC (public node for reads; wallet only signs)
  * ------------------------------------------------------------------ */
-let rpcId = 1; let rpcIndex = 0; try { rpcIndex = Number(sessionStorage.getItem('risky:rpc')) || 0; } catch {}
-/* Reads go to the public node; if it misbehaves (network or CORS failure) the next node takes over for the session. */
+let rpcId = 1;
+/*
+ * Reads go to the public node. Its load balancer occasionally answers with a
+ * malformed CORS header that browsers reject, so the primary gets a second try
+ * before the backup node is used. Log queries never go to the backup: it refuses
+ * anything older than recent history.
+ */
+const ARCHIVE_ONLY = new Set(['eth_getLogs']);
 async function rpc(method, params) {
   const body = JSON.stringify({ jsonrpc: '2.0', id: rpcId++, method, params });
-  for (let attempt = 0; attempt < CHAIN.rpcs.length; attempt++) {
-    const url = CHAIN.rpcs[(rpcIndex + attempt) % CHAIN.rpcs.length];
+  const primary = CHAIN.rpcs[0];
+  const order = ARCHIVE_ONLY.has(method) ? [primary, primary, primary] : [primary, primary, ...CHAIN.rpcs.slice(1)];
+  let lastErr = null;
+  for (const url of order) {
     let res;
     try { res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body }); }
-    catch { continue; }
-    if (!res.ok && res.status >= 500) continue;
+    catch (e) { lastErr = e; continue; }
+    if (!res.ok && res.status >= 500) { lastErr = new Error('RPC ' + res.status); continue; }
     const j = await res.json();
-    if (j.error) throw Object.assign(new Error(j.error.message), { data: j.error.data, code: j.error.code });
-    if (attempt) { rpcIndex = (rpcIndex + attempt) % CHAIN.rpcs.length; try { sessionStorage.setItem('risky:rpc', String(rpcIndex)); } catch {} }
+    if (j.error) {
+      // A node refusing on its own limits (archive access, block range) is not an answer; ask the next one.
+      if (/archive|block range|personal token|too many|limit/i.test(j.error.message || '')) { lastErr = new Error(j.error.message); continue; }
+      throw Object.assign(new Error(j.error.message), { data: j.error.data, code: j.error.code });
+    }
     return j.result;
   }
-  throw new Error('Could not reach Robinhood Chain. Check your connection and try again.');
+  throw lastErr || new Error('Could not reach Robinhood Chain. Check your connection and try again.');
 }
 const call = (to, data) => rpc('eth_call', [{ to, data }, 'latest']);
 const callAddr = async (to, data) => decAddr(await call(to, data));
@@ -282,7 +293,6 @@ async function loadCurves() {
   const n = Number(await callUint(ADDR.factory, SEL.allCurvesLength));
   const addrs = await Promise.all(Array.from({ length: n }, (_, i) => callAddr(ADDR.factory, SEL.curves + encUint(i))));
   state.curves = await Promise.all(addrs.map(loadCurve));
-  await Promise.all(state.curves.slice(0, 24).map((c) => getHistory(c).catch(() => null)));
   state.loaded = true;
 }
 async function getHistory(c) {
@@ -385,6 +395,8 @@ async function showExplore() {
   $('view').innerHTML = `<div class="card"><div class="empty dim">Reading the factory…</div></div>`;
   try { await loadCurves(); } catch (e) { $('view').innerHTML = `<div class="card"><div class="note note--bad">Could not reach the chain: ${esc(e.message)}</div></div>`; return; }
   renderExplore();
+  // Moves and trade counts need each market's history; fill them in as they arrive.
+  Promise.all(state.curves.slice(0, 24).map((c) => getHistory(c).catch((e) => { console.warn('history failed for', c.ibSym, e.message); return null; }))).then(() => renderExplore());
 }
 function renderExplore() {
   if (state.view !== 'explore') return;
@@ -394,9 +406,9 @@ function renderExplore() {
     <tr class="is-link" data-go="#/curve/${c.addr}">
       <td><div class="asset">${c.id.html}<div><div class="asset__name">${esc(c.ibSym)}</div><span class="asset__sub">pay ${esc(c.id.label)}, get ${esc(c.ibSym)}</span></div></div></td>
       <td>${fmt(c.reserve)} <span class="dim">${esc(c.id.label)}</span></td>
-      <td>${move(sum.day)}</td>
-      <td>${move(sum.sinceOpen)}</td>
-      <td>${sum.trades24 || '<span class="faint">0</span>'}</td>
+      <td>${Array.isArray(h) ? move(sum.day) : '<span class="faint">…</span>'}</td>
+      <td>${Array.isArray(h) ? move(sum.sinceOpen) : '<span class="faint">…</span>'}</td>
+      <td>${Array.isArray(h) ? (sum.trades24 || '<span class="faint">0</span>') : '<span class="faint">…</span>'}</td>
       <td>${c.stakeApr === null ? '<span class="faint">be first</span>' : !c.stakeApr ? '—' : pct(c.stakeApr).replace('+', '') + ' <span class="dim">/yr</span>'}</td>
     </tr>`; }).join('');
   $('view').innerHTML = `
