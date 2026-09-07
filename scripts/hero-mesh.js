@@ -62,12 +62,18 @@ const hexRgb = (hex) => [
   parseInt(hex.slice(5, 7), 16) / 255,
 ];
 
-/* Concatenates geometries into one, keeping only position and normal. */
-function mergeGeometries(parts) {
+/*
+ * Concatenates geometries into one, keeping only position and normal. Each part
+ * may name a material slot; the result carries a group per part so one mesh can
+ * wear several materials.
+ */
+function mergeGeometries(parts, slots = []) {
   const position = [];
   const normal = [];
+  const groups = [];
 
-  for (const part of parts) {
+  parts.forEach((part, partIndex) => {
+    const start = position.length / 3;
     const pos = part.attributes.position;
     const nrm = part.attributes.normal;
     const idx = part.index;
@@ -78,12 +84,14 @@ function mergeGeometries(parts) {
       position.push(pos.getX(v), pos.getY(v), pos.getZ(v));
       normal.push(nrm.getX(v), nrm.getY(v), nrm.getZ(v));
     }
+    groups.push({ start, count: position.length / 3 - start, slot: slots[partIndex] ?? 0 });
     part.dispose();
-  }
+  });
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
   geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normal, 3));
+  groups.forEach((g) => geometry.addGroup(g.start, g.count, g.slot));
   geometry.computeBoundingSphere();
   return geometry;
 }
@@ -126,14 +134,19 @@ function buildWordGeometry() {
     planes.get(z).push(shapeOf(contour));
   });
 
+  // Material slots: 0 the white letters, 1 the lower chevron (red), 2 the upper chevron (green).
+  const slotOf = (z) => (z === zOf(CHEVRONS.front) ? MARK_SLOT.red : z === zOf(CHEVRONS.back) ? MARK_SLOT.green : MARK_SLOT.white);
   const parts = [];
+  const slots = [];
   for (const [z, shapes] of planes) {
     const part = new THREE.ExtrudeGeometry(shapes, settings);
     part.translate(0, 0, z - DEPTH / 2);
     parts.push(part);
+    slots.push(slotOf(z));
   }
-  return mergeGeometries(parts);
+  return mergeGeometries(parts, slots);
 }
+const MARK_SLOT = { white: 0, red: 1, green: 2 };
 
 /* Stands the cylinder up, so a coin's faces point down +z. */
 function buildCoinGeometry() {
@@ -201,6 +214,15 @@ function buildMatcap(palette, size = 256) {
 const WHITE = {
   body: [0.56, 0.58, 0.63], mid: [1.0, 1.0, 1.0], rim: [1.0, 1.0, 1.0],
   spark: [1.0, 1.0, 1.0], cool: [0.24, 0.28, 0.38],
+};
+/* The two chevrons of the "s": the upper one in Robinhood green, the lower one in risk red, as in the logo. */
+const S_GREEN = {
+  body: [0.03, 0.30, 0.10], mid: [0.13, 0.83, 0.30], rim: [0.60, 1.0, 0.72],
+  spark: [0.90, 1.0, 0.94], cool: [0.05, 0.35, 0.15],
+};
+const S_RED = {
+  body: [0.35, 0.06, 0.08], mid: [0.92, 0.26, 0.26], rim: [1.0, 0.65, 0.60],
+  spark: [1.0, 0.92, 0.90], cool: [0.30, 0.08, 0.08],
 };
 /* Near-neutral, so a coin face texture multiplies through it without tinting. */
 const FACE = {
@@ -305,8 +327,11 @@ export async function initHeroMesh(canvas) {
   const whiteMatcap = buildMatcap(WHITE);
   const markGeometry = buildWordGeometry();
 
-  const material = new THREE.MeshMatcapNodeMaterial({ matcap: whiteMatcap });
-  const logo = new THREE.Mesh(markGeometry, material);
+  const markMaterials = [];
+  markMaterials[MARK_SLOT.white] = new THREE.MeshMatcapNodeMaterial({ matcap: whiteMatcap });
+  markMaterials[MARK_SLOT.red] = new THREE.MeshMatcapNodeMaterial({ matcap: buildMatcap(S_RED) });
+  markMaterials[MARK_SLOT.green] = new THREE.MeshMatcapNodeMaterial({ matcap: buildMatcap(S_GREEN) });
+  const logo = new THREE.Mesh(markGeometry, markMaterials);
   scene.add(logo);
 
   // Each impulse is a ripple expanding from where the pointer crossed the mesh.
@@ -350,17 +375,20 @@ export async function initHeroMesh(canvas) {
 
   const displace = (p) => ripple(p).mul(uWobble).add(swell(p));
   const radial = normalize(positionGeometry);
-  material.positionNode = positionLocal.add(radial.mul(displace(positionGeometry)));
+  // The same displacement on every slot, so the letters and both chevrons melt as one piece.
+  markMaterials.forEach((material) => {
+    material.positionNode = positionLocal.add(radial.mul(displace(positionGeometry)));
 
-  // The displacement happens on the GPU, so re-derive normals from its gradient.
-  material.normalNode = Fn(() => {
-    const p = positionGeometry;
-    const dx = displace(p.add(vec3(EPS, 0, 0))).sub(displace(p.add(vec3(-EPS, 0, 0))));
-    const dy = displace(p.add(vec3(0, EPS, 0))).sub(displace(p.add(vec3(0, -EPS, 0))));
-    const dz = displace(p.add(vec3(0, 0, EPS))).sub(displace(p.add(vec3(0, 0, -EPS))));
-    const gradient = vec3(dx, dy, dz).mul(float(1 / (2 * EPS)));
-    return transformNormalToView(normalize(normalLocal.sub(gradient.mul(0.7))));
-  })();
+    // The displacement happens on the GPU, so re-derive normals from its gradient.
+    material.normalNode = Fn(() => {
+      const p = positionGeometry;
+      const dx = displace(p.add(vec3(EPS, 0, 0))).sub(displace(p.add(vec3(-EPS, 0, 0))));
+      const dy = displace(p.add(vec3(0, EPS, 0))).sub(displace(p.add(vec3(0, -EPS, 0))));
+      const dz = displace(p.add(vec3(0, 0, EPS))).sub(displace(p.add(vec3(0, 0, -EPS))));
+      const gradient = vec3(dx, dy, dz).mul(float(1 / (2 * EPS)));
+      return transformNormalToView(normalize(normalLocal.sub(gradient.mul(0.7))));
+    })();
+  });
 
   /* ---------------------------------------------------------------- *
    * The burst: memecoins and sparks.

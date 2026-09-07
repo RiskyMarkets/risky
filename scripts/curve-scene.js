@@ -4,7 +4,10 @@
  * readout ride along with whatever just happened.
  */
 
-import { TOKENS, RESERVE } from './tokens.js';
+import { TOKENS } from './tokens.js';
+
+/* The coin that rides in as payment. Any of the roster works; the chrome letter reads best as a coin. */
+const PAY_TOKEN = TOKENS.find((t) => t.id === 'chrome') ?? TOKENS[0];
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -228,7 +231,7 @@ const nextToken = () => TOKENS[tokenCursor++ % TOKENS.length];
 function mint() {
   const token = nextToken();
   const entry = curveXY(spot.s);
-  const chip = makeChip(RESERVE);
+  const chip = makeChip(PAY_TOKEN);
   document.getElementById('layerFlow').appendChild(chip);
 
   const from = { x: CURVE.x0 - 120, y: entry.y + rand(120, 260) };
